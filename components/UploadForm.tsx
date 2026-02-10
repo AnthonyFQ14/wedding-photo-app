@@ -8,7 +8,6 @@ import { EditorialIconBox } from "@/components/EditorialIconBox";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { SectionHeader } from "@/components/SectionHeader";
 import { getErrorMessage } from "@/lib/get-error-message";
-import { transitionEditorialStagger } from "@/lib/motion";
 
 function formatRevealAt(iso: string): string {
   try {
@@ -82,6 +81,8 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
         scale: 0.8 + Math.random() * 0.6,
       };
     });
+    // Regenerate random particles each time celebration shows
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCelebration]);
 
   useEffect(() => {
@@ -89,16 +90,6 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
     setPreviewUrls(urls);
     return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [files]);
-
-  function startProgressAnimation() {
-    setProgress(0);
-    if (intervalRef.current) window.clearInterval(intervalRef.current);
-    intervalRef.current = window.setInterval(() => {
-      setProgress((p) =>
-        p < 92 ? p + Math.max(1, Math.round((92 - p) / 18)) : p,
-      );
-    }, 180);
-  }
 
   function stopProgressAnimation() {
     if (intervalRef.current) window.clearInterval(intervalRef.current);
@@ -152,7 +143,7 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
       setFeedback("complete");
       setGuestName("");
       setFiles([]);
-      fileInputRef.current && (fileInputRef.current.value = "");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       onUploaded?.();
       clearTimers();
 
