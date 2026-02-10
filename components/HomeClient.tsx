@@ -147,9 +147,9 @@ export function HomeClient({
               <p className="text-xs font-medium tracking-[0.28em] uppercase text-espresso/60">
                 {COUPLE_NAMES.replace(/\s+and\s+/i, " & ")}
               </p>
-              <div className="inline-flex items-center gap-2 rounded-full border border-espresso/10 bg-cream/70 px-3 py-1.5 text-xs text-espresso/70">
+              <div className="inline-flex cursor-default items-center gap-2 rounded-full border border-espresso/10 bg-cream/70 px-3 py-1.5 text-xs text-espresso/70">
                 <Lock className="h-3.5 w-3.5" />
-                Passcode vault
+                Passcode Vault
               </div>
             </div>
 

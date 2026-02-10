@@ -29,18 +29,36 @@ type Props = {
   revealAtIso?: string | null;
 };
 
+type FeedbackState = "idle" | "uploading" | "complete" | "thankyou";
+
+const MAX_PHOTOS = 10;
+
 export function UploadForm({ onUploaded, revealAtIso }: Props) {
   const [guestName, setGuestName] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
+  const [uploadCount, setUploadCount] = useState(0);
+  const [uploadTotal, setUploadTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [showThankYou, setShowThankYou] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackState>("idle");
   const [showCelebration, setShowCelebration] = useState(false);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [celebrationRect, setCelebrationRect] = useState<DOMRect | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const intervalRef = useRef<number | null>(null);
+  const timersRef = useRef<number[]>([]);
+
+  const uploading = feedback === "uploading" || feedback === "complete";
+
+  function clearTimers() {
+    timersRef.current.forEach((t) => window.clearTimeout(t));
+    timersRef.current = [];
+  }
+  function addTimer(fn: () => void, ms: number) {
+    timersRef.current.push(window.setTimeout(fn, ms));
+  }
 
   useEffect(() => {
     if (!showCelebration || !sectionRef.current) return;
@@ -51,83 +69,26 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
 
   const celebrationParticles = useMemo(() => {
     const emojis = ["❤️", "🥂"];
-    const particles: Array<{
-      id: number;
-      emoji: string;
-      startX: number;
-      startY: number;
-      moveX: number;
-      moveY: number;
-      delay: number;
-      scale: number;
-    }> = [];
-    const dist = () => 90 + Math.random() * 80;
-    const drift = () => (Math.random() - 0.5) * 50;
-    for (let i = 0; i < 28; i++) {
-      const edge = i % 4;
-      const t = Math.random();
-      if (edge === 0) {
-        particles.push({
-          id: i,
-          emoji: emojis[i % 2],
-          startX: t * 100,
-          startY: 0,
-          moveX: drift(),
-          moveY: -dist(),
-          delay: Math.random() * 0.2,
-          scale: 0.8 + Math.random() * 0.6,
-        });
-      } else if (edge === 1) {
-        particles.push({
-          id: i,
-          emoji: emojis[i % 2],
-          startX: 100,
-          startY: t * 100,
-          moveX: dist(),
-          moveY: drift(),
-          delay: Math.random() * 0.2,
-          scale: 0.8 + Math.random() * 0.6,
-        });
-      } else if (edge === 2) {
-        particles.push({
-          id: i,
-          emoji: emojis[i % 2],
-          startX: t * 100,
-          startY: 100,
-          moveX: drift(),
-          moveY: dist(),
-          delay: Math.random() * 0.2,
-          scale: 0.8 + Math.random() * 0.6,
-        });
-      } else {
-        particles.push({
-          id: i,
-          emoji: emojis[i % 2],
-          startX: 0,
-          startY: t * 100,
-          moveX: -dist(),
-          moveY: drift(),
-          delay: Math.random() * 0.2,
-          scale: 0.8 + Math.random() * 0.6,
-        });
-      }
-    }
-    return particles;
+    return Array.from({ length: 24 }, (_, i) => {
+      const angle = (i / 24) * 360 + Math.random() * 30;
+      const rad = (angle * Math.PI) / 180;
+      const distance = 80 + Math.random() * 100;
+      return {
+        id: i,
+        emoji: emojis[i % 2],
+        moveX: Math.cos(rad) * distance,
+        moveY: Math.sin(rad) * distance,
+        delay: Math.random() * 0.15,
+        scale: 0.8 + Math.random() * 0.6,
+      };
+    });
   }, [showCelebration]);
 
   useEffect(() => {
-    if (!file) {
-      setPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
-
-  const canSubmit = useMemo(() => {
-    return guestName.trim().length > 0 && file && !uploading;
-  }, [guestName, file, uploading]);
+    const urls = files.map((f) => URL.createObjectURL(f));
+    setPreviewUrls(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [files]);
 
   function startProgressAnimation() {
     setProgress(0);
@@ -139,43 +100,79 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
     }, 180);
   }
 
-  function stopProgressAnimation(finalValue: number) {
+  function stopProgressAnimation() {
     if (intervalRef.current) window.clearInterval(intervalRef.current);
     intervalRef.current = null;
-    setProgress(finalValue);
   }
 
   async function submit() {
-    if (!canSubmit || !file) return;
-    setUploading(true);
-    setError(null);
-    startProgressAnimation();
-    try {
-      const fd = new FormData();
-      fd.set("guestName", guestName.trim());
-      fd.set("file", file);
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: fd,
-      });
-      if (!res.ok) {
-        const j: unknown = await res.json().catch(() => null);
-        throw new Error(getErrorMessage(j, "Upload failed"));
+    const name = guestName.trim();
+    if (!name || files.length === 0) {
+      if (!name && files.length === 0) {
+        setValidationMessage("Please enter your name and choose at least one photo.");
+      } else if (!name) {
+        setValidationMessage("Please enter your name.");
+      } else {
+        setValidationMessage("Please choose at least one photo.");
       }
-      stopProgressAnimation(100);
-      setTimeout(() => stopProgressAnimation(0), 700);
+      return;
+    }
+    setValidationMessage(null);
+    setFeedback("uploading");
+    setError(null);
+    setUploadCount(0);
+    setUploadTotal(files.length);
+    setProgress(0);
+    const FEEDBACK_HEIGHT = 128;
+    setTimeout(() => {
+      window.scrollBy({ top: FEEDBACK_HEIGHT, behavior: "smooth" });
+    }, 250);
+    const total = files.length;
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fd = new FormData();
+        fd.set("guestName", name);
+        fd.set("file", file);
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: fd,
+        });
+        if (!res.ok) {
+          const j: unknown = await res.json().catch(() => null);
+          throw new Error(getErrorMessage(j, "Upload failed"));
+        }
+        const done = i + 1;
+        setUploadCount(done);
+        setProgress(Math.round((done / total) * 100));
+      }
+
+      stopProgressAnimation();
+      setProgress(100);
+      setFeedback("complete");
       setGuestName("");
-      setFile(null);
-      setShowCelebration(true);
-      if (revealAtIso) setShowThankYou(true);
+      setFiles([]);
+      fileInputRef.current && (fileInputRef.current.value = "");
       onUploaded?.();
-      setTimeout(() => setShowCelebration(false), 5200);
+      clearTimers();
+
+      addTimer(() => setShowCelebration(true), 600);
+      addTimer(() => {
+        if (revealAtIso) {
+          setFeedback("thankyou");
+        } else {
+          setFeedback("idle");
+          setProgress(0);
+        }
+      }, 1200);
+      addTimer(() => setShowCelebration(false), 4500);
     } catch (e: unknown) {
-      stopProgressAnimation(0);
+      stopProgressAnimation();
+      setProgress(0);
+      setFeedback("idle");
+      setUploadCount(0);
       const msg = e instanceof Error ? e.message : "Something went wrong";
       setError(msg);
-    } finally {
-      setUploading(false);
     }
   }
 
@@ -203,8 +200,8 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
                 key={p.id}
                 className="absolute text-2xl sm:text-3xl"
                 style={{
-                  left: `${p.startX}%`,
-                  top: `${p.startY}%`,
+                  left: "50%",
+                  top: "50%",
                   marginLeft: "-0.5em",
                   marginTop: "-0.5em",
                 }}
@@ -255,7 +252,10 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
           </label>
           <input
             value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
+            onChange={(e) => {
+              setGuestName(e.target.value);
+              setValidationMessage(null);
+            }}
             placeholder="e.g. Sarah"
             className="input-editorial"
             disabled={uploading}
@@ -264,93 +264,167 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
 
         <div className="grid gap-2">
           <label className="text-xs font-medium tracking-wide text-espresso/70">
-            Photo
+            Photos (up to {MAX_PHOTOS})
           </label>
           <div className="flex items-center gap-3">
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              multiple
+              onChange={(e) => {
+                const list = e.target.files;
+                if (!list?.length) {
+                  setFiles([]);
+                } else {
+                  setFiles(Array.from(list).slice(0, MAX_PHOTOS));
+                }
+                setValidationMessage(null);
+              }}
               className="block w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-espresso file:px-4 file:py-2 file:text-cream file:transition-colors file:hover:bg-espresso/90"
               disabled={uploading}
             />
           </div>
 
-          <AnimatePresence>
-            {previewUrl ? (
+          <AnimatePresence initial={false}>
+            {previewUrls.length > 0 ? (
               <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
-                transition={transitionEditorialStagger}
-                className="mt-3 overflow-hidden rounded-2xl border border-espresso/10 bg-cream"
+                key="preview"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden"
+                onAnimationComplete={(definition) => {
+                  if (
+                    typeof definition === "object" &&
+                    definition !== null &&
+                    "opacity" in definition &&
+                    definition.opacity === 1
+                  ) {
+                    const start = window.scrollY;
+                    const end = document.documentElement.scrollHeight - window.innerHeight;
+                    if (end <= start) return;
+                    const duration = 900;
+                    const startTime = performance.now();
+                    function step(now: number) {
+                      const t = Math.min((now - startTime) / duration, 1);
+                      const eased = 1 - (1 - t) ** 2;
+                      window.scrollTo(0, start + (end - start) * eased);
+                      if (t < 1) requestAnimationFrame(step);
+                    }
+                    requestAnimationFrame(step);
+                  }
+                }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="h-48 w-full object-cover"
-                />
+                <div className="mt-3">
+                  <p className="mb-2 text-xs text-espresso/60">
+                    {previewUrls.length} photo{previewUrls.length === 1 ? "" : "s"} selected
+                    {previewUrls.length >= MAX_PHOTOS ? ` (max ${MAX_PHOTOS})` : ""}
+                  </p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {previewUrls.map((url, i) => (
+                      <div
+                        key={url}
+                        className="aspect-square overflow-hidden rounded-xl border border-espresso/10 bg-cream"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={url}
+                          alt={`Preview ${i + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </motion.div>
             ) : null}
           </AnimatePresence>
         </div>
 
-        <AnimatePresence>
-          {showThankYou && revealAtIso ? (
+        {/* Single feedback area: fixed height so progress → thank-you doesn't resize */}
+        <AnimatePresence initial={false}>
+          {feedback !== "idle" ? (
             <motion.div
-              key="thank-you"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              className="rounded-2xl border border-champagne/30 bg-champagne/15 p-4"
+              key="feedback-container"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 128, opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
             >
-              <p className="text-sm font-medium text-espresso">
-                Thank you for your contribution!
-              </p>
-              <p className="mt-1 text-sm text-espresso/80">
-                Check back when the vault opens at{" "}
-                <span className="font-medium">
-                  {formatRevealAt(revealAtIso)}
-                </span>
-                .
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowThankYou(false)}
-                className="mt-3 text-xs font-medium text-espresso/70 underline underline-offset-2 hover:text-espresso"
-              >
-                Dismiss
-              </button>
+              <div className="h-[128px] rounded-2xl border border-champagne/25 bg-champagne/10 p-4">
+                <AnimatePresence mode="wait" initial={false}>
+                  {(feedback === "uploading" || feedback === "complete") ? (
+                    <motion.div
+                      key="progress-content"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="w-full"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-sm font-medium text-espresso">
+                          {feedback === "complete"
+                            ? "Memory saved!"
+                            : uploadCount > 0 && uploadTotal > 1
+                              ? `Uploading ${uploadCount} of ${uploadTotal}…`
+                              : "Developing your memory…"}
+                        </p>
+                        <p className="text-xs text-espresso/60">{progress}%</p>
+                      </div>
+                      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-espresso/10">
+                        <motion.div
+                          className="h-full rounded-full bg-espresso"
+                          animate={{ width: `${progress}%` }}
+                          transition={{ duration: 0.25, ease: "easeOut" }}
+                        />
+                      </div>
+                    </motion.div>
+                  ) : feedback === "thankyou" && revealAtIso ? (
+                    <motion.div
+                      key="thankyou-content"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="w-full"
+                    >
+                      <p className="text-sm font-medium text-espresso">
+                        Thank you for your contribution!
+                      </p>
+                      <p className="mt-1 text-sm text-espresso/80">
+                        Check back when the vault opens at{" "}
+                        <span className="font-medium">
+                          {formatRevealAt(revealAtIso)}
+                        </span>
+                        .
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFeedback("idle");
+                          setProgress(0);
+                        }}
+                        className="mt-3 text-xs font-medium text-espresso/70 underline underline-offset-2 hover:text-espresso"
+                      >
+                        Dismiss
+                      </button>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
             </motion.div>
           ) : null}
         </AnimatePresence>
 
-        <AnimatePresence>
-          {uploading || progress > 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              className="rounded-2xl border border-champagne/25 bg-champagne/10 p-4"
-            >
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-sm font-medium text-espresso">
-                  Developing your memory…
-                </p>
-                <p className="text-xs text-espresso/60">{progress}%</p>
-              </div>
-              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-espresso/10">
-              <motion.div
-                className="h-full rounded-full bg-espresso"
-                initial={{ width: "0%" }}
-                animate={{ width: `${progress}%` }}
-                transition={transitionEditorialStagger}
-              />
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+        {validationMessage ? (
+          <p className="text-sm text-espresso/80" role="alert">
+            {validationMessage}
+          </p>
+        ) : null}
 
         {error ? (
           <p className="text-sm text-espresso/80">
@@ -359,7 +433,7 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
         ) : null}
 
         <div className="mt-1 flex items-center justify-end">
-          <PrimaryButton onClick={submit} disabled={!canSubmit} type="button">
+          <PrimaryButton onClick={submit} disabled={uploading} type="button">
             {uploading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

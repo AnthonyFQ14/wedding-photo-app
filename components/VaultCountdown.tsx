@@ -28,24 +28,33 @@ type Props = {
 
 export function VaultCountdown({ revealAtIso, onReveal }: Props) {
   const revealAt = useMemo(() => new Date(revealAtIso), [revealAtIso]);
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState<Date | null>(null);
   const onRevealFired = useRef(false);
 
   useEffect(() => {
+    setNow(new Date());
     const t = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(t);
   }, []);
 
-  const remainingMs = revealAt.getTime() - now.getTime();
+  const remainingMs = now
+    ? revealAt.getTime() - now.getTime()
+    : 0;
 
   useEffect(() => {
-    if (remainingMs <= 0 && onReveal && !onRevealFired.current) {
+    if (
+      now !== null &&
+      remainingMs <= 0 &&
+      onReveal &&
+      !onRevealFired.current
+    ) {
       onRevealFired.current = true;
       onReveal();
     }
-  }, [remainingMs, onReveal]);
+  }, [now, remainingMs, onReveal]);
 
   const p = parts(remainingMs);
+  const isHydrated = now !== null;
 
   return (
     <section className="rounded-3xl border border-espresso/10 bg-white/35 p-6 backdrop-blur">
@@ -72,12 +81,12 @@ export function VaultCountdown({ revealAtIso, onReveal }: Props) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={transitionEditorialStagger}
-            className="rounded-2xl border border-champagne/25 bg-cream/60 px-3 py-4 text-center"
+            className="rounded-2xl border border-champagne/25 bg-cream/60 px-2 py-4 text-center sm:px-3"
           >
-            <div className="font-[var(--font-playfair)] text-2xl leading-none">
-              {String(x.value).padStart(2, "0")}
+            <div className="font-[var(--font-playfair)] text-lg leading-none tabular-nums sm:text-2xl">
+              {isHydrated ? String(x.value).padStart(2, "0") : "00"}
             </div>
-            <div className="mt-2 text-[11px] font-medium tracking-[0.18em] uppercase text-espresso/55">
+            <div className="mt-2 text-[10px] font-medium tracking-[0.12em] uppercase text-espresso/55 sm:text-[11px] sm:tracking-[0.18em]">
               {x.label}
             </div>
           </motion.div>
