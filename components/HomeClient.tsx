@@ -228,7 +228,7 @@ export function HomeClient({
         scale: 0.9 + Math.random() * 0.7,
       };
     });
-  }, [showVaultCelebration]);
+  }, []);
 
   // When vault is open: scroll into view (once) and optionally show first-time celebration
   useEffect(() => {

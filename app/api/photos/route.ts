@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { sanitizeApiError } from "@/lib/api-error";
 import { getRevealAt } from "@/lib/config";
+import type { PhotoRow } from "@/lib/photos-server";
 import { requireSession } from "@/lib/require-session";
 import { supabaseServer } from "@/lib/supabase/server";
 
