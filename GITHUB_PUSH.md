@@ -1,6 +1,6 @@
 # Push this project to GitHub
 
-The repo is initialized and committed locally. Create the remote repo and push:
+The repo is committed locally and `origin` is set to a placeholder URL. Finish in two steps:
 
 ## 1. Create the repo on GitHub
 
@@ -9,17 +9,15 @@ The repo is initialized and committed locally. Create the remote repo and push:
 3. **Public**, leave "Add a README" **unchecked** (you already have one).
 4. Click **Create repository**.
 
-## 2. Add remote and push
+## 2. Point origin at your repo and push
 
-GitHub will show you commands. Use these (replace `YOUR_USERNAME` with your GitHub username):
+Run (you may be prompted for your GitHub password or token):
 
 ```bash
 cd "/Users/anthonyferraro/Desktop/Personal Projects Websites/Cursor Projects/Wedding Photo App"
-git remote add origin https://github.com/YOUR_USERNAME/wedding-photo-app.git
-git branch -M main
 git push -u origin main
 ```
 
-If you chose a different repo name, use it in the URL instead of `wedding-photo-app`.
+The remote is already set to `https://github.com/AnthonyFQ14/wedding-photo-app.git`. If you use a different repo name, run `git remote set-url origin https://github.com/AnthonyFQ14/YOUR_REPO_NAME.git` first.
 
 Done. You can delete this file after pushing if you like.

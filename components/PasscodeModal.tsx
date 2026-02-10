@@ -78,7 +78,7 @@ export function PasscodeModal({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-medium tracking-[0.22em] uppercase text-espresso/65">
-                  {coupleNames}'s photo vault
+                  {coupleNames}&apos;s photo vault
                 </p>
                 <h2 className="mt-2 font-[var(--font-playfair)] text-2xl leading-tight">
                   Enter the shared passcode
