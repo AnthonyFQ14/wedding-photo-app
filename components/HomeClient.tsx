@@ -145,7 +145,7 @@ export function HomeClient({
           <div className="relative">
             <div className="flex items-center justify-between gap-4">
               <p className="text-xs font-medium tracking-[0.28em] uppercase text-espresso/60">
-                Editorial Luxury
+                {COUPLE_NAMES.replace(/\s+and\s+/i, " & ")}
               </p>
               <div className="inline-flex items-center gap-2 rounded-full border border-espresso/10 bg-cream/70 px-3 py-1.5 text-xs text-espresso/70">
                 <Lock className="h-3.5 w-3.5" />
@@ -154,7 +154,7 @@ export function HomeClient({
             </div>
 
             <h1 className="mt-6 font-[var(--font-playfair)] text-3xl leading-tight sm:text-4xl">
-              Share your moments with {COUPLE_NAMES}
+              Share a moment for the couple
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-7 text-espresso/65 sm:text-base">
               Capture something beautiful—then tuck it into the vault. After the
@@ -220,7 +220,10 @@ export function HomeClient({
 
         {authenticated ? (
           <div ref={uploadRef} className="mt-8 scroll-mt-20">
-            <UploadForm onUploaded={refreshPhotos} />
+            <UploadForm
+              onUploaded={refreshPhotos}
+              revealAtIso={showVaultCountdown ? revealAtForCountdown ?? null : null}
+            />
           </div>
         ) : null}
 
