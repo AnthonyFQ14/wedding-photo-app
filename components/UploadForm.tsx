@@ -22,6 +22,13 @@ function formatRevealAt(iso: string): string {
   }
 }
 
+/** Height in px for the validation card so it fits the message without clipping or extra gap. */
+function getValidationCardHeight(message: string | null): number {
+  if (!message) return 0;
+  if (message.includes("and choose")) return 52; // "Please enter your name and choose at least one photo." (2 lines)
+  return 38; // "Please enter your name." or "Please choose at least one photo." (1 line)
+}
+
 type Props = {
   onUploaded?: () => void;
   /** When the vault opens (ISO string). If set, show thank-you + check-back message after upload. */
@@ -345,9 +352,13 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
                             type="button"
                             onClick={(e) => {
                               e.preventDefault();
-                              setFiles((prev) =>
-                                prev.filter((_, idx) => idx !== i),
-                              );
+                              setFiles((prev) => {
+                                const next = prev.filter((_, idx) => idx !== i);
+                                if (next.length === 0 && fileInputRef.current) {
+                                  fileInputRef.current.value = "";
+                                }
+                                return next;
+                              });
                               setValidationMessage(null);
                             }}
                             className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white/90 transition-colors hover:bg-black/80 hover:text-white"
@@ -447,13 +458,13 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
             <motion.div
               key="validation-card"
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 52, opacity: 1 }}
+              animate={{ height: getValidationCardHeight(validationMessage), opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               className="overflow-hidden"
             >
-              <div className="rounded-2xl border border-champagne/90 bg-champagne/25 px-4 py-2">
-                <p className="text-sm text-espresso/80 leading-snug" role="alert">
+              <div className="rounded-2xl border border-champagne/35 bg-champagne/25 px-4 py-2">
+                <p className="text-sm text-espresso/80 leading-tight" role="alert">
                   {validationMessage}
                 </p>
               </div>
