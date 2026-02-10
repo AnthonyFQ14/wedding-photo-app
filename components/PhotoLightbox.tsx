@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Download, Heart, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { savePhoto } from "@/lib/save-photo";
+
 export type LightboxPhoto = {
   id: string;
   created_at: string;
@@ -34,16 +36,47 @@ export function PhotoLightbox({
   const [downloading, setDownloading] = useState(false);
   const [direction, setDirection] = useState(0); // -1 = left, 1 = right
   const constraintsRef = useRef<HTMLDivElement>(null);
+  const scrollYRef = useRef(0);
 
-  // Prevent body scroll when open
+  // Lock body scroll when open: use position fixed so the body doesn’t expand
+  // and we can restore scroll position when closing (avoids gallery “expanding” bug).
   useEffect(() => {
     if (open) {
-      document.body.style.overflow = "hidden";
+      scrollYRef.current = window.scrollY;
+      const body = document.body;
+      body.style.overflow = "hidden";
+      body.style.position = "fixed";
+      body.style.top = `-${scrollYRef.current}px`;
+      body.style.left = "0";
+      body.style.right = "0";
     } else {
-      document.body.style.overflow = "";
+      const body = document.body;
+      const savedScrollY = scrollYRef.current;
+      body.style.overflow = "";
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      // Restore scroll after reflow so the browser doesn’t reset scroll to 0
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, savedScrollY);
+        });
+      });
     }
     return () => {
-      document.body.style.overflow = "";
+      const body = document.body;
+      const saved = scrollYRef.current;
+      body.style.overflow = "";
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, saved);
+        });
+      });
     };
   }, [open]);
 
@@ -77,17 +110,7 @@ export function PhotoLightbox({
     try {
       const res = await fetch(photo.signed_url);
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      // Try to get a nice filename
-      const ext =
-        blob.type.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
-      a.download = `wedding-photo-${photo.id.slice(0, 8)}.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await savePhoto(blob, photo.id);
     } catch {
       // Fallback: open in new tab
       window.open(photo.signed_url, "_blank");

@@ -15,6 +15,8 @@ import { getErrorMessage } from "@/lib/get-error-message";
 import { getGuestId } from "@/lib/guest-id";
 import type { PhotosResult } from "@/lib/photos-server";
 
+const VAULT_FIRST_OPEN_KEY = "wedding-vault-first-open-seen";
+
 export type GalleryPhoto = {
   id: string;
   created_at: string;
@@ -36,10 +38,16 @@ export function HomeClient({
   initialRevealAtIso,
 }: Props) {
   const uploadRef = useRef<HTMLDivElement | null>(null);
+  const vaultOpenSectionRef = useRef<HTMLDivElement | null>(null);
+  const vaultOpenHeadingRef = useRef<HTMLParagraphElement | null>(null);
+  const hasScrolledToVault = useRef(false);
+  const justAuthenticatedRef = useRef(false);
+  const hasFetchedOnceWithCountdown = useRef(false);
 
   const [authChecked, setAuthChecked] = useState(true);
   const [authenticated, setAuthenticated] = useState(initialAuthenticated);
   const [showPasscode, setShowPasscode] = useState(false);
+  const [showVaultCelebration, setShowVaultCelebration] = useState(false);
 
   const [vaultLocked, setVaultLocked] = useState<boolean | null>(
     initialPhotosResult?.locked === true
@@ -147,6 +155,19 @@ export function HomeClient({
     checkSession();
   }, [checkSession]);
 
+  // When countdown is showing, fetch once so the API can set the test reveal cookie
+  // (otherwise when countdown hits 0 the next request has no cookie and gets a new 20s).
+  useEffect(() => {
+    if (
+      !authenticated ||
+      vaultLocked !== true ||
+      hasFetchedOnceWithCountdown.current
+    )
+      return;
+    hasFetchedOnceWithCountdown.current = true;
+    refreshPhotos();
+  }, [authenticated, vaultLocked, refreshPhotos]);
+
   // Fetch my likes for initial photos
   useEffect(() => {
     if (photos.length > 0 && guestIdRef.current) {
@@ -169,6 +190,90 @@ export function HomeClient({
   const goToUpload = useCallback(() => {
     uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
+
+  const goToVaultOpen = useCallback(() => {
+    const el = vaultOpenHeadingRef.current ?? vaultOpenSectionRef.current;
+    if (!el) return;
+    const offsetPx = 8;
+    const durationMs = 1200;
+    const startY = window.scrollY;
+    const targetY =
+      startY + el.getBoundingClientRect().top - offsetPx;
+    const startTime = performance.now();
+    function easeOutCubic(t: number) {
+      return 1 - (1 - t) ** 3;
+    }
+    function tick(now: number) {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / durationMs, 1);
+      window.scrollTo(0, startY + (targetY - startY) * easeOutCubic(t));
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }, []);
+
+  // Celebration particles for first-time vault open (emoji burst)
+  const vaultCelebrationParticles = useMemo(() => {
+    const emojis = ["✨", "💫", "🌸", "❤️"];
+    return Array.from({ length: 28 }, (_, i) => {
+      const angle = (i / 28) * 360 + Math.random() * 25;
+      const rad = (angle * Math.PI) / 180;
+      const distance = 100 + Math.random() * 120;
+      return {
+        id: i,
+        emoji: emojis[i % emojis.length],
+        moveX: Math.cos(rad) * distance,
+        moveY: Math.sin(rad) * distance,
+        delay: Math.random() * 0.2,
+        scale: 0.9 + Math.random() * 0.7,
+      };
+    });
+  }, [showVaultCelebration]);
+
+  // When vault is open: scroll into view (once) and optionally show first-time celebration
+  useEffect(() => {
+    if (!authenticated || vaultLocked !== false) return;
+
+    const isFirstTime =
+      typeof window !== "undefined" &&
+      !window.localStorage.getItem(VAULT_FIRST_OPEN_KEY);
+
+    if (isFirstTime) {
+      window.localStorage.setItem(VAULT_FIRST_OPEN_KEY, "1");
+      setShowVaultCelebration(true);
+    }
+
+    if (hasScrolledToVault.current) return;
+    hasScrolledToVault.current = true;
+    justAuthenticatedRef.current = false;
+
+    // Wait for vault section enter animation to finish (delay 0.15 + duration 0.6)
+    // so the scroll target is in its final position and we don’t overshoot
+    const t = window.setTimeout(() => {
+      goToVaultOpen();
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [authenticated, vaultLocked, goToVaultOpen]);
+
+  // Auto-dismiss vault celebration after animation
+  useEffect(() => {
+    if (!showVaultCelebration) return;
+    const t = window.setTimeout(() => setShowVaultCelebration(false), 2800);
+    return () => window.clearTimeout(t);
+  }, [showVaultCelebration]);
+
+  // When user just logged in but vault is still locked, scroll to upload
+  useEffect(() => {
+    if (
+      !justAuthenticatedRef.current ||
+      !authenticated ||
+      vaultLocked !== true
+    )
+      return;
+    justAuthenticatedRef.current = false;
+    const t = window.setTimeout(() => goToUpload(), 150);
+    return () => window.clearTimeout(t);
+  }, [authenticated, vaultLocked, goToUpload]);
 
   // Toggle like handler
   const handleToggleLike = useCallback(
@@ -254,8 +359,9 @@ export function HomeClient({
           setAuthenticated(true);
           setAuthChecked(true);
           setShowPasscode(false);
+          justAuthenticatedRef.current = true;
           refreshPhotos();
-          setTimeout(goToUpload, 0);
+          // Scroll to vault (if open) or upload (if locked) is handled in useEffect
         }}
         onClose={() => setShowPasscode(false)}
       />
@@ -268,6 +374,70 @@ export function HomeClient({
         onNavigate={setLightboxIndex}
         onToggleLike={handleToggleLike}
       />
+
+      {/* First-time vault open celebration */}
+      <AnimatePresence>
+        {showVaultCelebration ? (
+          <motion.div
+            key="vault-celebration"
+            className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="absolute inset-0 bg-cream/60 backdrop-blur-[2px]" />
+            <div className="relative flex flex-col items-center justify-center">
+              <motion.p
+                className="font-[var(--font-playfair)] text-2xl font-medium text-espresso sm:text-3xl"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.15, duration: 0.4 }}
+              >
+                The vault is open.
+              </motion.p>
+              <motion.p
+                className="mt-2 text-sm text-espresso/70"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.3 }}
+              >
+                Enjoy the gallery
+              </motion.p>
+            </div>
+            {vaultCelebrationParticles.map((p) => (
+              <motion.span
+                key={p.id}
+                className="absolute text-2xl sm:text-3xl"
+                style={{
+                  left: "50%",
+                  top: "50%",
+                  marginLeft: "-0.5em",
+                  marginTop: "-0.5em",
+                }}
+                initial={{ x: 0, y: 0, opacity: 0, scale: 0 }}
+                animate={{
+                  x: p.moveX,
+                  y: p.moveY,
+                  opacity: [0, 1, 1, 0],
+                  scale: p.scale,
+                }}
+                transition={{
+                  duration: 2.6,
+                  delay: p.delay,
+                  opacity: {
+                    times: [0, 0.12, 0.55, 1],
+                    duration: 2.6,
+                  },
+                }}
+                exit={{ opacity: 0 }}
+              >
+                {p.emoji}
+              </motion.span>
+            ))}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-cream" />
@@ -343,21 +513,63 @@ export function HomeClient({
           </div>
         </motion.section>
 
-        <AnimatePresence mode="wait">
-          {showVaultCountdown ? (
+        <div className="relative mt-8">
+          <AnimatePresence>
+            {showVaultCountdown ? (
+              <motion.div
+                key="countdown"
+                className="mt-0"
+                initial={{ opacity: 1 }}
+                exit={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 1,
+                  opacity: 0,
+                  y: -20,
+                  transition: {
+                    duration: 0.55,
+                    ease: [0.22, 1, 0.36, 1],
+                  },
+                }}
+              >
+                <VaultCountdown
+                  revealAtIso={revealAtForCountdown}
+                  onReveal={authenticated ? refreshPhotos : undefined}
+                />
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+          {authenticated && vaultLocked === false ? (
             <motion.div
-              key="countdown"
-              className="mt-8"
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.35 } }}
+              ref={vaultOpenSectionRef}
+              key="gallery"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.6,
+                delay: 0.15,
+                ease: [0.22, 1, 0.36, 1],
+              }}
             >
-              <VaultCountdown
-                revealAtIso={revealAtForCountdown}
-                onReveal={authenticated ? refreshPhotos : undefined}
+              <motion.p
+                ref={vaultOpenHeadingRef}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35, duration: 0.4 }}
+                className="scroll-mt-2 mb-4 text-center font-[var(--font-playfair)] text-lg text-espresso/80"
+              >
+                The vault is open.
+              </motion.p>
+              <GalleryMasonry
+                photos={galleryPhotos}
+                onPhotoClick={(index) => setLightboxIndex(index)}
+                onToggleLike={handleToggleLike}
               />
             </motion.div>
           ) : null}
-        </AnimatePresence>
+        </div>
 
         {authenticated ? (
           <div ref={uploadRef} className="mt-8 scroll-mt-20">
@@ -376,33 +588,6 @@ export function HomeClient({
                 {photosError}
               </p>
             </section>
-          ) : null}
-
-          {authenticated && vaultLocked === false ? (
-            <motion.div
-              key="gallery"
-              className="mt-8"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.6,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-            >
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.4 }}
-                className="mb-4 text-center font-[var(--font-playfair)] text-lg text-espresso/80"
-              >
-                The vault is open.
-              </motion.p>
-              <GalleryMasonry
-                photos={galleryPhotos}
-                onPhotoClick={(index) => setLightboxIndex(index)}
-                onToggleLike={handleToggleLike}
-              />
-            </motion.div>
           ) : null}
 
           {authenticated && vaultLocked === null && !photosError ? (

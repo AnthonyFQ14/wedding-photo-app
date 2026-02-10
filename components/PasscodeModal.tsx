@@ -59,7 +59,7 @@ export function PasscodeModal({
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center px-5"
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-5 pt-12 pb-20 sm:items-center sm:pt-0 sm:pb-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

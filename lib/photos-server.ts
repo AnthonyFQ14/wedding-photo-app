@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+
 import { getRevealAt } from "@/lib/config";
 import { requireSession } from "@/lib/require-session";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -5,6 +7,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 const BUCKET = "wedding-photos";
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 const MAX_PHOTOS = 250;
+const VAULT_TEST_COOKIE = "vault_test_reveal_at";
 
 export type PhotoRow = {
   id: string;
@@ -25,13 +28,32 @@ export type PhotosResult =
       photos: PhotoWithMeta[];
     };
 
+/** When VAULT_TEST_SECONDS is set, use same cookie as API so initial load and API share one reveal time. */
+async function getRevealAtForRequest(): Promise<Date> {
+  const testSeconds = process.env.VAULT_TEST_SECONDS;
+  const sec =
+    testSeconds !== undefined && testSeconds !== ""
+      ? Number(testSeconds)
+      : NaN;
+  if (!Number.isFinite(sec) || sec <= 0) {
+    return getRevealAt();
+  }
+  const cookieStore = await cookies();
+  const existing = cookieStore.get(VAULT_TEST_COOKIE)?.value;
+  if (existing) {
+    const parsed = new Date(existing);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return getRevealAt();
+}
+
 export async function getPhotosOrLockedState(): Promise<PhotosResult | null> {
   const session = await requireSession();
   if (!session.ok) return null;
 
   const supabase = supabaseServer();
   const now = new Date();
-  const revealAt = getRevealAt();
+  const revealAt = await getRevealAtForRequest();
 
   if (now.getTime() < revealAt.getTime()) {
     return {

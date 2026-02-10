@@ -17,6 +17,7 @@ import {
   staggerItem,
   transitionEditorialStagger,
 } from "@/lib/motion";
+import { savePhotos } from "@/lib/save-photo";
 
 export type GalleryPhoto = {
   id: string;
@@ -70,29 +71,26 @@ export function GalleryMasonry({ photos, onPhotoClick, onToggleLike }: Props) {
     if (toDownload.length === 0) return;
     setDownloading(true);
 
-    for (const photo of toDownload) {
-      if (!photo.signed_url) continue;
-      try {
-        const res = await fetch(photo.signed_url);
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        const ext =
-          blob.type.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
-        a.download = `wedding-photo-${photo.id.slice(0, 8)}.${ext}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        // Small delay between downloads so browser doesn't block them
-        await new Promise((r) => setTimeout(r, 400));
-      } catch {
-        // Skip failed downloads
+    try {
+      const blobsAndIds = await Promise.all(
+        toDownload.map(async (photo) => {
+          if (!photo.signed_url) return null;
+          const res = await fetch(photo.signed_url);
+          const blob = await res.blob();
+          return { blob, photoId: photo.id };
+        }),
+      );
+      const valid = blobsAndIds.filter(
+        (x): x is { blob: Blob; photoId: string } => x !== null,
+      );
+      if (valid.length > 0) {
+        await savePhotos(valid);
       }
+    } catch {
+      // Skip failed saves
+    } finally {
+      setDownloading(false);
     }
-
-    setDownloading(false);
   }, [photos, selected]);
 
   return (

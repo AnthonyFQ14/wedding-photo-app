@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { sanitizeApiError } from "@/lib/api-error";
@@ -7,13 +8,33 @@ import { supabaseServer } from "@/lib/supabase/server";
 
 const BUCKET = "wedding-photos";
 const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
+const VAULT_TEST_COOKIE = "vault_test_reveal_at";
 
-type PhotoRow = {
-  id: string;
-  created_at: string;
-  guest_name: string;
-  object_path: string;
-};
+/** When VAULT_TEST_SECONDS is set, use a cookie so the same reveal time is used across serverless invocations. */
+async function getRevealAtForRequest(): Promise<{
+  revealAt: Date;
+  setCookie?: string;
+}> {
+  const testSeconds = process.env.VAULT_TEST_SECONDS;
+  const sec = testSeconds !== undefined && testSeconds !== "" ? Number(testSeconds) : NaN;
+  if (!Number.isFinite(sec) || sec <= 0) {
+    return { revealAt: getRevealAt() };
+  }
+
+  const cookieStore = await cookies();
+  const existing = cookieStore.get(VAULT_TEST_COOKIE)?.value;
+  if (existing) {
+    const parsed = new Date(existing);
+    if (!Number.isNaN(parsed.getTime())) {
+      return { revealAt: parsed };
+    }
+  }
+
+  const revealAt = new Date(Date.now() + sec * 1000);
+  const iso = revealAt.toISOString();
+  const setCookie = `${VAULT_TEST_COOKIE}=${encodeURIComponent(iso)}; Path=/; Max-Age=120; SameSite=Lax`;
+  return { revealAt, setCookie };
+}
 
 export async function GET() {
   const session = await requireSession();
@@ -24,20 +45,18 @@ export async function GET() {
   const supabase = supabaseServer();
 
   const now = new Date();
-  const revealAt = getRevealAt();
+  const { revealAt, setCookie } = await getRevealAtForRequest();
 
   if (now.getTime() < revealAt.getTime()) {
+    const headers: HeadersInit = { "Cache-Control": "no-store" };
+    if (setCookie) headers["Set-Cookie"] = setCookie;
     return NextResponse.json(
       {
         locked: true,
         now: now.toISOString(),
         revealAt: revealAt.toISOString(),
       },
-      {
-        headers: {
-          "Cache-Control": "no-store",
-        },
-      },
+      { headers },
     );
   }
 
