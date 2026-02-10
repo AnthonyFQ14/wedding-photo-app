@@ -75,8 +75,8 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
 
   const celebrationParticles = useMemo(() => {
     const emojis = ["❤️", "🥂"];
-    return Array.from({ length: 24 }, (_, i) => {
-      const angle = (i / 24) * 360 + Math.random() * 30;
+    return Array.from({ length: 14 }, (_, i) => {
+      const angle = (i / 14) * 360 + Math.random() * 25;
       const rad = (angle * Math.PI) / 180;
       const distance = 80 + Math.random() * 100;
       return {
@@ -84,8 +84,8 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
         emoji: emojis[i % 2],
         moveX: Math.cos(rad) * distance,
         moveY: Math.sin(rad) * distance,
-        delay: Math.random() * 0.15,
-        scale: 0.8 + Math.random() * 0.6,
+        delay: Math.random() * 0.12,
+        scale: 0.9 + Math.random() * 0.5,
       };
     });
     // Regenerate random particles each time celebration shows
@@ -196,7 +196,7 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
             {celebrationParticles.map((p) => (
               <motion.span
                 key={p.id}
-                className="absolute text-2xl sm:text-3xl"
+                className="absolute text-2xl sm:text-3xl will-change-transform"
                 style={{
                   left: "50%",
                   top: "50%",
@@ -207,15 +207,16 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
                 animate={{
                   x: p.moveX,
                   y: p.moveY,
-                  opacity: [0, 1, 1, 0],
+                  opacity: [0, 1, 0.9, 0],
                   scale: p.scale,
                 }}
                 transition={{
-                  duration: 2.8,
+                  duration: 2.4,
                   delay: p.delay,
+                  ease: "easeOut",
                   opacity: {
-                    times: [0, 0.1, 0.6, 1],
-                    duration: 2.8,
+                    times: [0, 0.08, 0.7, 1],
+                    duration: 2.4,
                   },
                 }}
                 exit={{ opacity: 0 }}

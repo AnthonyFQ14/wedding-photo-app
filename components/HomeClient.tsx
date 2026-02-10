@@ -215,17 +215,17 @@ export function HomeClient({
   // Celebration particles for first-time vault open (emoji burst)
   const vaultCelebrationParticles = useMemo(() => {
     const emojis = ["✨", "💫", "🌸", "❤️"];
-    return Array.from({ length: 28 }, (_, i) => {
-      const angle = (i / 28) * 360 + Math.random() * 25;
+    return Array.from({ length: 16 }, (_, i) => {
+      const angle = (i / 16) * 360 + Math.random() * 22;
       const rad = (angle * Math.PI) / 180;
-      const distance = 100 + Math.random() * 120;
+      const distance = 100 + Math.random() * 100;
       return {
         id: i,
         emoji: emojis[i % emojis.length],
         moveX: Math.cos(rad) * distance,
         moveY: Math.sin(rad) * distance,
-        delay: Math.random() * 0.2,
-        scale: 0.9 + Math.random() * 0.7,
+        delay: Math.random() * 0.15,
+        scale: 0.9 + Math.random() * 0.5,
       };
     });
   }, []);
@@ -386,7 +386,7 @@ export function HomeClient({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="absolute inset-0 bg-cream/60 backdrop-blur-[2px]" />
+            <div className="absolute inset-0 bg-cream/70" />
             <div className="relative flex flex-col items-center justify-center">
               <motion.p
                 className="font-[var(--font-playfair)] text-2xl font-medium text-espresso sm:text-3xl"
@@ -408,7 +408,7 @@ export function HomeClient({
             {vaultCelebrationParticles.map((p) => (
               <motion.span
                 key={p.id}
-                className="absolute text-2xl sm:text-3xl"
+                className="absolute text-2xl sm:text-3xl will-change-transform"
                 style={{
                   left: "50%",
                   top: "50%",
@@ -419,15 +419,16 @@ export function HomeClient({
                 animate={{
                   x: p.moveX,
                   y: p.moveY,
-                  opacity: [0, 1, 1, 0],
+                  opacity: [0, 1, 0.9, 0],
                   scale: p.scale,
                 }}
                 transition={{
-                  duration: 2.6,
+                  duration: 2.2,
                   delay: p.delay,
+                  ease: "easeOut",
                   opacity: {
-                    times: [0, 0.12, 0.55, 1],
-                    duration: 2.6,
+                    times: [0, 0.1, 0.6, 1],
+                    duration: 2.2,
                   },
                 }}
                 exit={{ opacity: 0 }}
