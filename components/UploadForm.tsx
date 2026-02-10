@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ImageUp, Loader2 } from "lucide-react";
+import { ImageUp, Loader2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { EditorialIconBox } from "@/components/EditorialIconBox";
@@ -257,8 +257,9 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
           <label className="text-xs font-medium tracking-wide text-espresso/70">
             Photos (up to {MAX_PHOTOS})
           </label>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <input
+              id="photos-file-input"
               ref={fileInputRef}
               type="file"
               accept="image/*"
@@ -272,9 +273,23 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
                 }
                 setValidationMessage(null);
               }}
-              className="block w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-espresso file:px-4 file:py-2 file:text-cream file:transition-colors file:hover:bg-espresso/90"
+              className="sr-only"
               disabled={uploading}
+              aria-label="Choose photos"
             />
+            <label
+              htmlFor={uploading ? undefined : "photos-file-input"}
+              className={`inline-flex w-fit cursor-pointer rounded-full border-0 bg-espresso px-4 py-2 text-sm text-cream transition-colors hover:bg-espresso/90 ${
+                uploading ? "pointer-events-none opacity-50" : ""
+              }`}
+            >
+              Choose files
+            </label>
+            {files.length === 0 &&
+              validationMessage !== null &&
+              validationMessage.includes("photo") && (
+                <p className="text-sm text-espresso/60">No files selected</p>
+              )}
           </div>
 
           <AnimatePresence initial={false}>
@@ -317,7 +332,7 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
                     {previewUrls.map((url, i) => (
                       <div
                         key={url}
-                        className="aspect-square overflow-hidden rounded-xl border border-espresso/10 bg-cream"
+                        className="group relative aspect-square overflow-hidden rounded-xl border border-espresso/10 bg-cream"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -325,6 +340,22 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
                           alt={`Preview ${i + 1}`}
                           className="h-full w-full object-cover"
                         />
+                        {!uploading && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setFiles((prev) =>
+                                prev.filter((_, idx) => idx !== i),
+                              );
+                              setValidationMessage(null);
+                            }}
+                            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white/90 transition-colors hover:bg-black/80 hover:text-white"
+                            aria-label={`Remove photo ${i + 1}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -411,11 +442,24 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
           ) : null}
         </AnimatePresence>
 
-        {validationMessage ? (
-          <p className="text-sm text-espresso/80" role="alert">
-            {validationMessage}
-          </p>
-        ) : null}
+        <AnimatePresence initial={false}>
+          {validationMessage ? (
+            <motion.div
+              key="validation-card"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 52, opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="rounded-2xl border border-champagne/90 bg-champagne/25 px-4 py-2">
+                <p className="text-sm text-espresso/80 leading-snug" role="alert">
+                  {validationMessage}
+                </p>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
         {error ? (
           <p className="text-sm text-espresso/80">
@@ -423,8 +467,13 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
           </p>
         ) : null}
 
-        <div className="mt-1 flex items-center justify-end">
-          <PrimaryButton onClick={submit} disabled={uploading} type="button">
+        <div className="mt-0 flex justify-center">
+          <PrimaryButton
+            onClick={submit}
+            disabled={uploading}
+            type="button"
+            className="w-full sm:w-auto sm:min-w-[220px]"
+          >
             {uploading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
