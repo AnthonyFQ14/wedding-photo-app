@@ -39,6 +39,34 @@ export type Database = {
         };
         Relationships: [];
       };
+      photo_likes: {
+        Row: {
+          id: string;
+          photo_id: string;
+          guest_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          photo_id: string;
+          guest_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          photo_id?: string;
+          guest_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "photo_likes_photo_id_fkey";
+            columns: ["photo_id"];
+            referencedRelation: "wedding_photos";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

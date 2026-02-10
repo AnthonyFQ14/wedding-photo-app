@@ -13,11 +13,16 @@ export type PhotoRow = {
   object_path: string;
 };
 
+export type PhotoWithMeta = PhotoRow & {
+  signed_url: string | null;
+  like_count: number;
+};
+
 export type PhotosResult =
   | { locked: true; now: string; revealAt: string }
   | {
       locked: false;
-      photos: Array<PhotoRow & { signed_url: string | null }>;
+      photos: PhotoWithMeta[];
     };
 
 export async function getPhotosOrLockedState(): Promise<PhotosResult | null> {
@@ -77,11 +82,32 @@ export async function getPhotosOrLockedState(): Promise<PhotosResult | null> {
     }
   }
 
+  // Fetch like counts per photo
+  const likeCountMap = new Map<string, number>();
+  const photoIds = photos.map((p) => p.id);
+
+  if (photoIds.length > 0) {
+    const { data: likeCounts } = await supabase
+      .from("photo_likes")
+      .select("photo_id")
+      .in("photo_id", photoIds);
+
+    if (likeCounts) {
+      for (const row of likeCounts) {
+        likeCountMap.set(
+          row.photo_id,
+          (likeCountMap.get(row.photo_id) ?? 0) + 1,
+        );
+      }
+    }
+  }
+
   return {
     locked: false,
     photos: photos.map((p) => ({
       ...p,
       signed_url: signedByPath.get(p.object_path) ?? null,
+      like_count: likeCountMap.get(p.id) ?? 0,
     })),
   };
 }

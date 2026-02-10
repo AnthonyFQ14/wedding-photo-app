@@ -102,12 +102,33 @@ export async function GET() {
     }
   }
 
+  // Fetch like counts per photo
+  const likeCountMap = new Map<string, number>();
+  const photoIds = photos.map((p) => p.id);
+
+  if (photoIds.length > 0) {
+    const { data: likeCounts } = await supabase
+      .from("photo_likes")
+      .select("photo_id")
+      .in("photo_id", photoIds);
+
+    if (likeCounts) {
+      for (const row of likeCounts) {
+        likeCountMap.set(
+          row.photo_id,
+          (likeCountMap.get(row.photo_id) ?? 0) + 1,
+        );
+      }
+    }
+  }
+
   return NextResponse.json(
     {
       locked: false,
       photos: photos.map((p) => ({
         ...p,
         signed_url: signedByPath.get(p.object_path) ?? null,
+        like_count: likeCountMap.get(p.id) ?? 0,
       })),
     },
     {

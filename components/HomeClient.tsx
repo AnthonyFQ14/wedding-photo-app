@@ -6,11 +6,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { GalleryMasonry } from "@/components/GalleryMasonry";
 import { PasscodeModal } from "@/components/PasscodeModal";
+import { PhotoLightbox } from "@/components/PhotoLightbox";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { UploadForm } from "@/components/UploadForm";
 import { VaultCountdown } from "@/components/VaultCountdown";
 import { COUPLE_NAMES } from "@/lib/config";
 import { getErrorMessage } from "@/lib/get-error-message";
+import { getGuestId } from "@/lib/guest-id";
 import type { PhotosResult } from "@/lib/photos-server";
 
 export type GalleryPhoto = {
@@ -19,6 +21,7 @@ export type GalleryPhoto = {
   guest_name: string;
   object_path: string;
   signed_url: string | null;
+  like_count: number;
 };
 
 type Props = {
@@ -54,15 +57,48 @@ export function HomeClient({
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [photosError, setPhotosError] = useState<string | null>(null);
 
+  // Lightbox state
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  // Likes: set of photo IDs liked by this guest
+  const [likedByMe, setLikedByMe] = useState<Set<string>>(new Set());
+  const guestIdRef = useRef<string>("");
+
+  // Initialize guest ID on mount
+  useEffect(() => {
+    guestIdRef.current = getGuestId();
+  }, []);
+
+  // Fetch which photos this guest has liked
+  const fetchMyLikes = useCallback(async (photoIds: string[]) => {
+    if (photoIds.length === 0 || !guestIdRef.current) return;
+    try {
+      const res = await fetch(
+        `/api/my-likes?guest_id=${encodeURIComponent(guestIdRef.current)}&photo_ids=${encodeURIComponent(photoIds.join(","))}`,
+      );
+      if (res.ok) {
+        const data = (await res.json()) as { liked_photo_ids: string[] };
+        setLikedByMe(new Set(data.liked_photo_ids));
+      }
+    } catch {
+      // Silently fail – likes are a nice-to-have
+    }
+  }, []);
+
   const passcodeOpen = showPasscode && authChecked && !authenticated;
 
   const galleryPhotos = useMemo(
-    () => photos.filter((p) => p?.signed_url),
-    [photos],
+    () =>
+      photos
+        .filter((p) => p?.signed_url)
+        .map((p) => ({
+          ...p,
+          liked_by_me: likedByMe.has(p.id),
+        })),
+    [photos, likedByMe],
   );
 
-  const revealAtForCountdown =
-    revealAtIso ?? initialRevealAtIso;
+  const revealAtForCountdown = revealAtIso ?? initialRevealAtIso;
   const showVaultCountdown =
     revealAtForCountdown &&
     new Date(revealAtForCountdown).getTime() > Date.now();
@@ -92,6 +128,9 @@ export function HomeClient({
         setVaultLocked(false);
         setRevealAtIso(null);
         setPhotos(j.photos);
+        // Fetch which photos this guest has liked
+        const ids = j.photos.map((p) => p.id);
+        fetchMyLikes(ids);
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
@@ -102,16 +141,109 @@ export function HomeClient({
     } finally {
       setLoadingPhotos(false);
     }
-  }, []);
+  }, [fetchMyLikes]);
 
   useEffect(() => {
     checkSession();
   }, [checkSession]);
-  // Initial photos come from server; refetch only on Refresh or after upload
+
+  // Fetch my likes for initial photos
+  useEffect(() => {
+    if (photos.length > 0 && guestIdRef.current) {
+      fetchMyLikes(photos.map((p) => p.id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Re-fetch likes once guest ID is ready (after mount)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (photos.length > 0 && guestIdRef.current) {
+        fetchMyLikes(photos.map((p) => p.id));
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const goToUpload = useCallback(() => {
     uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
+
+  // Toggle like handler
+  const handleToggleLike = useCallback(
+    async (photoId: string) => {
+      const guestId = guestIdRef.current;
+      if (!guestId) return;
+
+      // Optimistic update
+      setLikedByMe((prev) => {
+        const next = new Set(prev);
+        if (next.has(photoId)) {
+          next.delete(photoId);
+        } else {
+          next.add(photoId);
+        }
+        return next;
+      });
+
+      setPhotos((prev) =>
+        prev.map((p) => {
+          if (p.id !== photoId) return p;
+          const wasLiked = likedByMe.has(photoId);
+          return {
+            ...p,
+            like_count: wasLiked
+              ? Math.max(0, p.like_count - 1)
+              : p.like_count + 1,
+          };
+        }),
+      );
+
+      try {
+        const res = await fetch(`/api/photos/${photoId}/like`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ guest_id: guestId }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as {
+            liked: boolean;
+            like_count: number;
+          };
+          // Reconcile with server truth
+          setLikedByMe((prev) => {
+            const next = new Set(prev);
+            if (data.liked) {
+              next.add(photoId);
+            } else {
+              next.delete(photoId);
+            }
+            return next;
+          });
+          setPhotos((prev) =>
+            prev.map((p) =>
+              p.id === photoId ? { ...p, like_count: data.like_count } : p,
+            ),
+          );
+        }
+      } catch {
+        // Revert optimistic update on error
+        setLikedByMe((prev) => {
+          const next = new Set(prev);
+          if (next.has(photoId)) {
+            next.delete(photoId);
+          } else {
+            next.add(photoId);
+          }
+          return next;
+        });
+        // Re-fetch to get truth
+        refreshPhotos();
+      }
+    },
+    [likedByMe, refreshPhotos],
+  );
 
   return (
     <div className="min-h-screen">
@@ -126,6 +258,15 @@ export function HomeClient({
           setTimeout(goToUpload, 0);
         }}
         onClose={() => setShowPasscode(false)}
+      />
+
+      {/* Lightbox */}
+      <PhotoLightbox
+        photos={galleryPhotos}
+        activeIndex={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onNavigate={setLightboxIndex}
+        onToggleLike={handleToggleLike}
       />
 
       <div className="pointer-events-none fixed inset-0 -z-10">
@@ -256,7 +397,11 @@ export function HomeClient({
               >
                 The vault is open.
               </motion.p>
-              <GalleryMasonry photos={galleryPhotos} />
+              <GalleryMasonry
+                photos={galleryPhotos}
+                onPhotoClick={(index) => setLightboxIndex(index)}
+                onToggleLike={handleToggleLike}
+              />
             </motion.div>
           ) : null}
 
