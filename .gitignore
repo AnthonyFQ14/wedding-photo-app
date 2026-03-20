@@ -20,6 +20,9 @@
 # production
 /build
 
+# cursor (local editor rules)
+.cursor/
+
 # misc
 .DS_Store
 *.pem
