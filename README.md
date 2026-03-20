@@ -2,6 +2,8 @@
 
 A simple, elegant web app for wedding guests to upload photos into a private vault. The couple shares a passcode; after the celebration, the full gallery unlocks as a curated mosaic.
 
+**Live site:** [wedding-photo-app-vault.vercel.app](https://wedding-photo-app-vault.vercel.app)
+
 **Stack:** Next.js 15, React 19, Supabase (Storage + Postgres), Tailwind CSS.
 
 ---
@@ -12,6 +14,27 @@ A simple, elegant web app for wedding guests to upload photos into a private vau
 - **Guest uploads** — Guests enter their name and add a photo; images are stored privately in Supabase.
 - **Reveal countdown** — Gallery stays locked until a set time after the wedding (configurable).
 - **Editorial look** — Playfair + Inter, cream/espresso/champagne palette, subtle motion.
+
+---
+
+## Preview
+
+The [live deployment](https://wedding-photo-app-vault.vercel.app) follows the same flow. Guests arrive at a **closed vault**—the gallery stays hidden until they enter the passcode. Once they’re in, the full mosaic of guest photos opens at once.
+
+<p align="center">
+  <img src="./docs/screenshots/app%20sc%201.png" alt="Landing screen with closed vault and passcode prompt" width="780" /><br />
+  <sub><strong>1 · Closed vault</strong> — First thing you see: the vault is locked and guests need the passcode.</sub>
+</p>
+
+<p align="center">
+  <img src="./docs/screenshots/app%20sc%202.png" alt="Passcode entry" width="780" /><br />
+  <sub><strong>2 · Unlocking</strong> — Entering the shared passcode to open the vault.</sub>
+</p>
+
+<p align="center">
+  <img src="./docs/screenshots/app%20sc%203.png" alt="Open vault with full photo gallery" width="780" /><br />
+  <sub><strong>3 · Open vault</strong> — Gallery unlocked; every picture from guests is visible together.</sub>
+</p>
 
 ---
 
