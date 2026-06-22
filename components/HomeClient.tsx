@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, GalleryHorizontal, Lock } from "lucide-react";
+import { Camera, GalleryHorizontal, Lock, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { GalleryMasonry } from "@/components/GalleryMasonry";
@@ -48,6 +48,14 @@ export function HomeClient({
   const [authenticated, setAuthenticated] = useState(initialAuthenticated);
   const [showPasscode, setShowPasscode] = useState(false);
   const [showVaultCelebration, setShowVaultCelebration] = useState(false);
+
+  // Demo mode: lets you showcase the locked-vault → countdown → reveal flow
+  // on demand, even though the real reveal time has already passed.
+  const DEMO_LOCK_HOURS = 24;
+  const DEMO_UNLOCK_SECONDS = 10;
+  const [demoActive, setDemoActive] = useState(false);
+  const [demoUnlocking, setDemoUnlocking] = useState(false);
+  const [demoRevealAtIso, setDemoRevealAtIso] = useState<string | null>(null);
 
   const [vaultLocked, setVaultLocked] = useState<boolean | null>(
     initialPhotosResult?.locked === true
@@ -106,9 +114,11 @@ export function HomeClient({
     [photos, likedByMe],
   );
 
-  const revealAtForCountdown = revealAtIso ?? initialRevealAtIso;
+  const revealAtForCountdown = demoActive
+    ? demoRevealAtIso
+    : revealAtIso ?? initialRevealAtIso;
   const showVaultCountdown =
-    revealAtForCountdown &&
+    !!revealAtForCountdown &&
     new Date(revealAtForCountdown).getTime() > Date.now();
 
   const checkSession = useCallback(async () => {
@@ -150,6 +160,42 @@ export function HomeClient({
       setLoadingPhotos(false);
     }
   }, [fetchMyLikes]);
+
+  // --- Demo mode handlers ---
+  const startDemo = useCallback(() => {
+    setDemoUnlocking(false);
+    setDemoRevealAtIso(
+      new Date(Date.now() + DEMO_LOCK_HOURS * 60 * 60 * 1000).toISOString(),
+    );
+    setDemoActive(true);
+  }, []);
+
+  const demoUnlock = useCallback(() => {
+    setDemoUnlocking(true);
+    setDemoRevealAtIso(
+      new Date(Date.now() + DEMO_UNLOCK_SECONDS * 1000).toISOString(),
+    );
+  }, []);
+
+  const exitDemo = useCallback(() => {
+    setDemoActive(false);
+    setDemoUnlocking(false);
+    setDemoRevealAtIso(null);
+  }, []);
+
+  // Fired by the countdown when the demo timer hits zero.
+  const handleDemoReveal = useCallback(() => {
+    setDemoActive(false);
+    setDemoUnlocking(false);
+    setDemoRevealAtIso(null);
+    if (authenticated) {
+      setShowVaultCelebration(true);
+      refreshPhotos();
+    } else {
+      // Mimics a real guest: after the reveal they enter the passcode to view.
+      setShowPasscode(true);
+    }
+  }, [authenticated, refreshPhotos]);
 
   useEffect(() => {
     checkSession();
@@ -514,6 +560,56 @@ export function HomeClient({
           </div>
         </motion.section>
 
+        {/* Demo mode panel — showcase the locked-vault → countdown → reveal flow */}
+        <div className="mt-6 rounded-2xl border border-dashed border-espresso/25 bg-white/30 p-4 backdrop-blur sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-medium tracking-[0.22em] uppercase text-espresso/55">
+                Demo mode
+              </p>
+              <p className="mt-1 text-sm text-espresso/70">
+                {demoActive
+                  ? demoUnlocking
+                    ? "Revealing in a few seconds…"
+                    : "Vault locked with a 24h countdown. Unlock to fast-forward the reveal."
+                  : "Preview the locked vault, countdown, and reveal."}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {demoActive ? (
+                <>
+                  <PrimaryButton
+                    variant="ghost"
+                    type="button"
+                    onClick={exitDemo}
+                  >
+                    Exit
+                  </PrimaryButton>
+                  <PrimaryButton
+                    type="button"
+                    onClick={demoUnlock}
+                    disabled={demoUnlocking}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {demoUnlocking
+                      ? "Revealing…"
+                      : `Demo unlock (${DEMO_UNLOCK_SECONDS}s)`}
+                  </PrimaryButton>
+                </>
+              ) : (
+                <PrimaryButton
+                  variant="ghost"
+                  type="button"
+                  onClick={startDemo}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Start vault demo
+                </PrimaryButton>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="relative mt-8">
           <AnimatePresence>
             {showVaultCountdown ? (
@@ -537,12 +633,18 @@ export function HomeClient({
               >
                 <VaultCountdown
                   revealAtIso={revealAtForCountdown}
-                  onReveal={authenticated ? refreshPhotos : undefined}
+                  onReveal={
+                    demoActive
+                      ? handleDemoReveal
+                      : authenticated
+                        ? refreshPhotos
+                        : undefined
+                  }
                 />
               </motion.div>
             ) : null}
           </AnimatePresence>
-          {authenticated && vaultLocked === false ? (
+          {authenticated && vaultLocked === false && !demoActive ? (
             <motion.div
               ref={vaultOpenSectionRef}
               key="gallery"
