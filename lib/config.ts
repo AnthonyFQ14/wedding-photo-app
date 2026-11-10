@@ -11,10 +11,16 @@ export const EVENT = {
   city: "Fort Lauderdale, FL",
 };
 
+// Photos for this event live under their own folder, so this edition can share
+// a Supabase project with the wedding app without the galleries mixing.
+export const PHOTO_FOLDER = "engagement-taylor-alexander";
+
+// Uses PARTY_* names (not WEDDING_*) so the wedding app's env vars,
+// which preview deployments inherit, don't override the party date.
 export const WEDDING_DATE_ISO =
-  process.env.WEDDING_DATE ?? "2026-11-14T19:00:00-05:00";
+  process.env.PARTY_DATE ?? "2026-11-14T19:00:00-05:00";
 export const REVEAL_AFTER_HOURS = Number(
-  process.env.REVEAL_AFTER_HOURS ?? "24",
+  process.env.PARTY_REVEAL_AFTER_HOURS ?? "24",
 );
 
 export function getWeddingDate(): Date {

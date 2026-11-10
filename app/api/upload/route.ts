@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 
 import { sanitizeApiError } from "@/lib/api-error";
+import { PHOTO_FOLDER } from "@/lib/config";
 import { requireSession } from "@/lib/require-session";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
   const ext = safeExtFromFilename(originalFilename) ?? "jpg";
   const id = crypto.randomUUID();
   const yyyyMm = new Date().toISOString().slice(0, 7); // YYYY-MM
-  const objectPath = `photos/${yyyyMm}/${id}.${ext}`;
+  const objectPath = `${PHOTO_FOLDER}/${yyyyMm}/${id}.${ext}`;
 
   const bytes = Buffer.from(await fileRaw.arrayBuffer());
 

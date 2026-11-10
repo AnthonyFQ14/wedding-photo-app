@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import { getRevealAt } from "@/lib/config";
+import { getRevealAt, PHOTO_FOLDER } from "@/lib/config";
 import { requireSession } from "@/lib/require-session";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -66,6 +66,7 @@ export async function getPhotosOrLockedState(): Promise<PhotosResult | null> {
   const { data: rows, error } = await supabase
     .from("wedding_photos")
     .select("id, created_at, guest_name, object_path")
+    .like("object_path", `${PHOTO_FOLDER}/%`)
     .order("created_at", { ascending: false })
     .limit(MAX_PHOTOS);
 

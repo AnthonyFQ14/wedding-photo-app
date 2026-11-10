@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { sanitizeApiError } from "@/lib/api-error";
-import { getRevealAt } from "@/lib/config";
+import { getRevealAt, PHOTO_FOLDER } from "@/lib/config";
 import type { PhotoRow } from "@/lib/photos-server";
 import { requireSession } from "@/lib/require-session";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -64,6 +64,7 @@ export async function GET() {
   const { data: rows, error } = await supabase
     .from("wedding_photos")
     .select("id, created_at, guest_name, object_path")
+    .like("object_path", `${PHOTO_FOLDER}/%`)
     .order("created_at", { ascending: false })
     .limit(250);
 
