@@ -74,14 +74,14 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
   }, [showCelebration]);
 
   const celebrationParticles = useMemo(() => {
-    const emojis = ["❤️", "🥂"];
+    const emojis = ["🥂", "❤️", "🍾"];
     return Array.from({ length: 14 }, (_, i) => {
       const angle = (i / 14) * 360 + Math.random() * 25;
       const rad = (angle * Math.PI) / 180;
       const distance = 80 + Math.random() * 100;
       return {
         id: i,
-        emoji: emojis[i % 2],
+        emoji: emojis[i % emojis.length],
         moveX: Math.cos(rad) * distance,
         moveY: Math.sin(rad) * distance,
         delay: Math.random() * 0.12,
@@ -230,7 +230,7 @@ export function UploadForm({ onUploaded, revealAtIso }: Props) {
 
       <section
         ref={sectionRef}
-        className="relative overflow-hidden rounded-3xl border border-espresso/10 bg-white/40 p-6 backdrop-blur"
+        className="relative overflow-hidden rounded-3xl border border-espresso/10 bg-burgundy/60 p-6 backdrop-blur"
       >
 
       <div className="flex items-start justify-between gap-4">

@@ -1,12 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FDFCF8"/>
-      <stop offset="1" stop-color="#F6F1E9"/>
-    </linearGradient>
-  </defs>
-  <rect x="8" y="8" width="176" height="176" rx="36" fill="url(#g)" stroke="#D6C3A5" stroke-width="4"/>
-  <circle cx="96" cy="96" r="56" fill="none" stroke="#2D241E" stroke-opacity="0.10" stroke-width="2"/>
-  <text x="96" y="112" text-anchor="middle" font-size="72" font-family="ui-serif, Georgia, 'Times New Roman', serif" fill="#2D241E">W</text>
+  <rect x="8.0" y="8.0" width="176.0" height="176.0" rx="36.0" fill="#420506" stroke="#0E0506" stroke-width="4.0"/>
+  <circle cx="96.0" cy="96.0" r="60.0" fill="none" stroke="#F6ECE4" stroke-opacity="0.35" stroke-width="2.0"/>
+  <text x="96.0" y="112.0" text-anchor="middle" font-size="52.0" font-family="'Bodoni 72', Didot, ui-serif, Georgia, serif" fill="#F6ECE4">T&amp;A</text>
 </svg>
-

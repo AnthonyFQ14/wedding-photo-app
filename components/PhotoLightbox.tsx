@@ -192,7 +192,7 @@ export function PhotoLightbox({
                       alt={
                         photo.guest_name
                           ? `Photo by ${photo.guest_name}`
-                          : "Wedding photo"
+                          : "Engagement party photo"
                       }
                       className="max-h-[75vh] max-w-[90vw] rounded-2xl object-contain sm:max-w-[80vw]"
                       draggable={false}

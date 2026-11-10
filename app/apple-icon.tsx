@@ -16,21 +16,21 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#FDFCF8",
+          background: "#420506",
           borderRadius: 44,
-          border: "6px solid #D6C3A5",
+          border: "6px solid #0E0506",
         }}
       >
         <div
           style={{
-            fontSize: 86,
+            fontSize: 56,
             fontFamily: "ui-serif, Georgia, 'Times New Roman', serif",
-            color: "#2D241E",
+            color: "#F6ECE4",
             lineHeight: 1,
             marginTop: 10,
           }}
         >
-          W
+          T&amp;A
         </div>
       </div>
     ),

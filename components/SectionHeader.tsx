@@ -16,10 +16,10 @@ export function SectionHeader({
   return (
     <div className="flex items-end justify-between gap-4">
       <div>
-        <p className="text-xs font-medium tracking-[0.22em] uppercase text-espresso/60">
+        <p className="font-caps text-xs font-medium tracking-[0.22em] uppercase text-espresso/60">
           {label}
         </p>
-        <h2 className="mt-2 font-[var(--font-playfair)] text-xl leading-tight sm:text-2xl">
+        <h2 className="mt-2 font-display text-xl leading-tight sm:text-2xl">
           {title}
         </h2>
         {description ? (

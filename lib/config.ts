@@ -1,11 +1,18 @@
-export const APP_NAME = "Wedding Photo Vault";
+export const APP_NAME = "Taylor & Alexander";
 
 // You can edit these without redeploying DB changes.
-export const COUPLE_NAMES = "Anthony and Lauren";
+export const COUPLE_NAMES = "Taylor and Alexander";
+
+// Party details shown on the home screen (mirrors the invitation).
+export const EVENT = {
+  kind: "engagement party",
+  dateLine: "Saturday | November 14th | 7PM",
+  venue: "YOLO O Lounge",
+  city: "Fort Lauderdale, FL",
+};
 
 export const WEDDING_DATE_ISO =
-  process.env.WEDDING_DATE ?? "2026-02-14T17:00:00";
-
+  process.env.WEDDING_DATE ?? "2026-11-14T19:00:00-05:00";
 export const REVEAL_AFTER_HOURS = Number(
   process.env.REVEAL_AFTER_HOURS ?? "24",
 );

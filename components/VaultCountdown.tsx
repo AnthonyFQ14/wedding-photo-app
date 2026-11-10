@@ -57,12 +57,12 @@ export function VaultCountdown({ revealAtIso, onReveal }: Props) {
   const isHydrated = now !== null;
 
   return (
-    <section className="rounded-3xl border border-espresso/10 bg-white/35 p-6 backdrop-blur">
+    <section className="rounded-3xl border border-espresso/10 bg-burgundy/60 p-6 backdrop-blur">
       <div className="flex items-start justify-between gap-4">
         <SectionHeader
           label="The Vault"
           title="Memories revealing in…"
-          description="The gallery opens 24 hours after the wedding."
+          description="The gallery opens after the party."
         />
         <EditorialIconBox>
           <Hourglass className="h-5 w-5 text-espresso/70" />
@@ -83,7 +83,7 @@ export function VaultCountdown({ revealAtIso, onReveal }: Props) {
             transition={transitionEditorialStagger}
             className="rounded-2xl border border-champagne/25 bg-cream/60 px-2 py-4 text-center sm:px-3"
           >
-            <div className="font-[var(--font-playfair)] text-lg leading-none tabular-nums sm:text-2xl">
+            <div className="font-display text-lg leading-none tabular-nums sm:text-2xl">
               {isHydrated ? String(x.value).padStart(2, "0") : "00"}
             </div>
             <div className="mt-2 text-[10px] font-medium tracking-[0.12em] uppercase text-espresso/55 sm:text-[11px] sm:tracking-[0.18em]">

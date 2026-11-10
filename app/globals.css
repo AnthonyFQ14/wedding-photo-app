@@ -1,15 +1,24 @@
 @import "tailwindcss";
 
+/*
+ * Engagement party palette: burgundy + black, ivory ink.
+ * Token names are kept from the original theme so components don't change:
+ *   cream     = page background (near-black)
+ *   espresso  = main ink (ivory)
+ *   champagne = wine accent
+ *   burgundy  = card / invitation red
+ */
 :root {
-  --background: #FDFCF8;
-  --foreground: #2D241E;
-  /* Editorial Luxury palette */
-  --color-cream: #FDFCF8;
-  --color-espresso: #2D241E;
-  --color-champagne: #D6C3A5;
-  --color-champagne-2: #CBB48E;
-  /* Dark ink for inputs (input is always on white, so always use dark text) */
-  --input-ink: #2D241E;
+  --background: #0E0506;
+  --foreground: #F6ECE4;
+  --color-cream: #0E0506;
+  --color-espresso: #F6ECE4;
+  --color-champagne: #B23A42;
+  --color-champagne-2: #9E1C24;
+  --color-burgundy: #420506;
+  --color-burgundy-2: #2A0305;
+  /* Inputs sit on white, so they always use dark ink */
+  --input-ink: #2A0305;
 }
 
 @theme inline {
@@ -19,21 +28,18 @@
   --color-espresso: var(--color-espresso);
   --color-champagne: var(--color-champagne);
   --color-champagne-2: var(--color-champagne-2);
-  /* Typography */
+  --color-burgundy: var(--color-burgundy);
+  --color-burgundy-2: var(--color-burgundy-2);
+  /* Typography (matches the invitation) */
   --font-sans: var(--font-inter);
-  --font-display: var(--font-playfair);
+  --font-display: var(--font-bodoni);
+  --font-script: var(--font-pinyon);
+  --font-caps: var(--font-cinzel);
+  --font-serif: var(--font-cormorant);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #14110E;
-    --foreground: #F6F1E9;
-    --color-cream: #14110E;
-    --color-espresso: #F6F1E9;
-    --color-champagne: #8B7355;
-    --color-champagne-2: #A68B6A;
-    --input-ink: #2D241E;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
@@ -47,12 +53,12 @@ body {
   background: color-mix(in oklab, var(--color-champagne) 55%, transparent);
 }
 
-/* Editorial Luxury input style – explicit colors for maximum readability */
+/* Input style: explicit colors for maximum readability */
 .input-editorial {
   width: 100%;
   border-radius: 1rem;
-  border: 1px solid rgba(45, 36, 30, 0.2);
-  background-color: #ffffff;
+  border: 1px solid rgba(66, 5, 6, 0.25);
+  background-color: #fffaf6;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   line-height: 1.25rem;
@@ -62,9 +68,9 @@ body {
 }
 .input-editorial::placeholder {
   color: var(--input-ink);
-  opacity: 0.75;
+  opacity: 0.6;
 }
 .input-editorial:focus {
-  border-color: color-mix(in oklab, var(--color-champagne) 60%, transparent);
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-champagne) 30%, transparent);
+  border-color: color-mix(in oklab, var(--color-champagne) 70%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-champagne) 35%, transparent);
 }

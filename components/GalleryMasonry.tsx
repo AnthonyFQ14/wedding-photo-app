@@ -94,10 +94,10 @@ export function GalleryMasonry({ photos, onPhotoClick, onToggleLike }: Props) {
   }, [photos, selected]);
 
   return (
-    <section className="rounded-3xl border border-espresso/10 bg-white/25 p-6 backdrop-blur">
+    <section className="rounded-3xl border border-espresso/10 bg-burgundy/45 p-6 backdrop-blur">
       <SectionHeader
         label="The Gallery"
-        title="A living mosaic of the day"
+        title="A living mosaic of the night"
         description={
           selectMode
             ? `${selected.size} of ${photos.length} selected`
@@ -186,8 +186,8 @@ export function GalleryMasonry({ photos, onPhotoClick, onToggleLike }: Props) {
             transition={transitionEditorialStagger}
             className={`group relative mb-3 block cursor-pointer break-inside-avoid overflow-hidden rounded-2xl border bg-cream/60 transition-all ${
               selectMode && selected.has(p.id)
-                ? "border-champagne-2 shadow-[0_0_0_2px_rgba(203,180,142,0.4),0_6px_22px_rgba(45,36,30,0.12)]"
-                : "border-espresso/10 shadow-[0_6px_22px_rgba(45,36,30,0.08)] hover:shadow-[0_12px_30px_rgba(45,36,30,0.12)]"
+                ? "border-champagne-2 shadow-[0_0_0_2px_rgba(178,58,66,0.45),0_6px_22px_rgba(0,0,0,0.45)]"
+                : "border-espresso/10 shadow-[0_6px_22px_rgba(0,0,0,0.35)] hover:shadow-[0_12px_30px_rgba(0,0,0,0.45)]"
             }`}
             onClick={() => {
               if (selectMode) {
@@ -219,7 +219,7 @@ export function GalleryMasonry({ photos, onPhotoClick, onToggleLike }: Props) {
                 alt={
                   p.guest_name
                     ? `Photo by ${p.guest_name}`
-                    : "Wedding photo"
+                    : "Engagement party photo"
                 }
                 loading="lazy"
                 decoding="async"

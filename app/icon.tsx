@@ -16,9 +16,9 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#FDFCF8",
+          background: "#420506",
           borderRadius: 96,
-          border: "10px solid #D6C3A5",
+          border: "10px solid #0E0506",
         }}
       >
         <div
@@ -26,7 +26,7 @@ export default function Icon() {
             width: 320,
             height: 320,
             borderRadius: 999,
-            border: "6px solid rgba(45,36,30,0.10)",
+            border: "6px solid rgba(246,236,228,0.35)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -34,15 +34,15 @@ export default function Icon() {
         >
           <div
             style={{
-              fontSize: 210,
+              fontSize: 120,
               fontFamily:
                 "ui-serif, Georgia, 'Times New Roman', serif",
-              color: "#2D241E",
+              color: "#F6ECE4",
               lineHeight: 1,
               marginTop: 16,
             }}
           >
-            W
+            T&amp;A
           </div>
         </div>
       </div>

@@ -65,22 +65,22 @@ export function PasscodeModal({
           exit={{ opacity: 0 }}
           onClick={onClose}
         >
-          <div className="absolute inset-0 bg-espresso/40 backdrop-blur-md" />
+          <div className="absolute inset-0 bg-black/65 backdrop-blur-md" />
 
           <motion.div
             initial={{ opacity: 0, y: 14, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 14, scale: 0.98 }}
             transition={transitionEditorial}
-            className="relative w-full max-w-md rounded-3xl border border-champagne/30 bg-cream p-7 shadow-[0_18px_55px_rgba(45,36,30,0.20)]"
+            className="relative w-full max-w-md rounded-3xl border border-champagne/30 bg-burgundy-2 p-7 shadow-[0_18px_55px_rgba(0,0,0,0.6)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-medium tracking-[0.22em] uppercase text-espresso/65">
+                <p className="font-caps text-xs font-medium tracking-[0.22em] uppercase text-espresso/65">
                   {coupleNames}&apos;s photo vault
                 </p>
-                <h2 className="mt-2 font-[var(--font-playfair)] text-2xl leading-tight">
+                <h2 className="mt-2 font-display text-2xl leading-tight">
                   Enter the shared passcode
                 </h2>
               </div>

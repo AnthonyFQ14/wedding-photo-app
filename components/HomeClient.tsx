@@ -4,18 +4,22 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Camera, GalleryHorizontal, Lock, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { ChampagneTower } from "@/components/ChampagneTower";
 import { GalleryMasonry } from "@/components/GalleryMasonry";
 import { PasscodeModal } from "@/components/PasscodeModal";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { UploadForm } from "@/components/UploadForm";
 import { VaultCountdown } from "@/components/VaultCountdown";
-import { COUPLE_NAMES } from "@/lib/config";
+import { COUPLE_NAMES, EVENT } from "@/lib/config";
 import { getErrorMessage } from "@/lib/get-error-message";
 import { getGuestId } from "@/lib/guest-id";
 import type { PhotosResult } from "@/lib/photos-server";
 
-const VAULT_FIRST_OPEN_KEY = "wedding-vault-first-open-seen";
+const VAULT_FIRST_OPEN_KEY = "engagement-vault-first-open-seen";
+
+// Demo panel is for showing off the app; hidden for guests unless enabled.
+const SHOW_DEMO = process.env.NEXT_PUBLIC_SHOW_DEMO === "true";
 
 export type GalleryPhoto = {
   id: string;
@@ -260,7 +264,7 @@ export function HomeClient({
 
   // Celebration particles for first-time vault open (emoji burst)
   const vaultCelebrationParticles = useMemo(() => {
-    const emojis = ["✨", "💫", "🌸", "❤️"];
+    const emojis = ["✨", "🥂", "🍾", "❤️"];
     return Array.from({ length: 16 }, (_, i) => {
       const angle = (i / 16) * 360 + Math.random() * 22;
       const rad = (angle * Math.PI) / 180;
@@ -432,10 +436,10 @@ export function HomeClient({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="absolute inset-0 bg-cream/70" />
+            <div className="absolute inset-0 bg-black/70" />
             <div className="relative flex flex-col items-center justify-center">
               <motion.p
-                className="font-[var(--font-playfair)] text-2xl font-medium text-espresso sm:text-3xl"
+                className="font-display text-2xl font-medium text-espresso sm:text-3xl"
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.15, duration: 0.4 }}
@@ -488,7 +492,7 @@ export function HomeClient({
 
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-cream" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,rgba(214,195,165,0.35),transparent_45%),radial-gradient(circle_at_90%_15%,rgba(214,195,165,0.25),transparent_40%),radial-gradient(circle_at_50%_90%,rgba(45,36,30,0.08),transparent_55%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_5%,rgba(120,12,18,0.55),transparent_50%),radial-gradient(circle_at_90%_20%,rgba(66,5,6,0.65),transparent_45%),radial-gradient(circle_at_50%_100%,rgba(66,5,6,0.45),transparent_60%)]" />
       </div>
 
       <main className="mx-auto w-full max-w-3xl px-5 pb-16 pt-14 sm:pt-20">
@@ -496,30 +500,54 @@ export function HomeClient({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55 }}
-          className="relative overflow-hidden rounded-[2rem] border border-espresso/10 bg-white/35 p-8 backdrop-blur"
+          className="relative overflow-hidden rounded-[2rem] border border-espresso/15 bg-burgundy p-6 shadow-[0_24px_60px_rgba(0,0,0,0.55)] sm:p-10"
         >
-          <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(214,195,165,0.20),transparent_55%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(255,255,255,0.05),transparent_45%)]" />
 
           <div className="relative">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-xs font-medium tracking-[0.28em] uppercase text-espresso/60">
-                {COUPLE_NAMES.replace(/\s+and\s+/i, " & ")}
-              </p>
-              <div className="inline-flex cursor-default items-center gap-2 rounded-full border border-espresso/10 bg-cream/70 px-3 py-1.5 text-xs text-espresso/70">
+            <div className="flex justify-end">
+              <div className="inline-flex cursor-default items-center gap-2 rounded-full border border-espresso/15 bg-black/30 px-3 py-1.5 font-caps text-[11px] tracking-[0.12em] text-espresso/75">
                 <Lock className="h-3.5 w-3.5" />
-                Passcode Vault
+                Photo Vault
               </div>
             </div>
 
-            <h1 className="mt-6 font-[var(--font-playfair)] text-3xl leading-tight sm:text-4xl">
-              Share a moment for the couple
-            </h1>
-            <p className="mt-4 max-w-xl text-sm leading-7 text-espresso/65 sm:text-base">
-              Capture something beautiful—then tuck it into the vault. After the
-              celebration, the full gallery reveals as a curated mosaic.
-            </p>
+            <div className="mt-4 text-center">
+              <p className="font-display text-5xl leading-none tracking-[0.04em] sm:text-6xl">
+                WE&rsquo;RE
+              </p>
+              <h1 className="-mt-1 font-script text-6xl leading-[1.15] sm:text-7xl">
+                Engaged!
+              </h1>
+              <p className="mt-5 font-serif text-lg italic text-espresso/85 sm:text-xl">
+                Raise a glass to celebrate the engagement of
+              </p>
+              <p className="mt-2 font-script text-5xl leading-[1.2] sm:text-6xl">
+                {COUPLE_NAMES.replace(/\s+and\s+/i, " & ")}
+              </p>
+              <p className="mt-5 font-caps text-sm tracking-[0.08em] text-espresso/90 sm:text-base">
+                {EVENT.dateLine}
+              </p>
+              <p className="mt-2 font-caps text-xs tracking-[0.1em] text-espresso/70 sm:text-sm">
+                <span className="font-semibold text-espresso/90">{EVENT.venue}</span>
+                {" · "}
+                {EVENT.city}
+              </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="mt-6 flex items-center justify-center gap-4 text-espresso/45">
+                <span className="h-px w-12 bg-espresso/25" />
+                <ChampagneTower className="h-20 w-20" />
+                <span className="h-px w-12 bg-espresso/25" />
+              </div>
+
+              <p className="mx-auto mt-6 max-w-md text-sm leading-7 text-espresso/75 sm:text-base">
+                Snap something worth toasting, then tuck it into the vault.
+                After the party, every photo is revealed together as one
+                gallery for the happy couple.
+              </p>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
               <PrimaryButton
                 type="button"
                 onClick={() => {
@@ -552,7 +580,7 @@ export function HomeClient({
             </div>
 
             {!authenticated ? (
-              <p className="mt-4 text-sm text-espresso/60">
+              <p className="mt-4 text-center text-sm text-espresso/65">
                 Tap <span className="font-medium">Share a Moment</span> to enter
                 the passcode.
               </p>
@@ -560,8 +588,9 @@ export function HomeClient({
           </div>
         </motion.section>
 
-        {/* Demo mode panel — showcase the locked-vault → countdown → reveal flow */}
-        <div className="mt-6 rounded-2xl border border-dashed border-espresso/25 bg-white/30 p-4 backdrop-blur sm:p-5">
+        {/* Demo mode panel: showcase the locked-vault → countdown → reveal flow */}
+        {SHOW_DEMO ? (
+        <div className="mt-6 rounded-2xl border border-dashed border-espresso/25 bg-burgundy/45 p-4 backdrop-blur sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[11px] font-medium tracking-[0.22em] uppercase text-espresso/55">
@@ -609,6 +638,7 @@ export function HomeClient({
             </div>
           </div>
         </div>
+        ) : null}
 
         <div className="relative mt-8">
           <AnimatePresence>
@@ -661,7 +691,7 @@ export function HomeClient({
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35, duration: 0.4 }}
-                className="scroll-mt-2 mb-4 text-center font-[var(--font-playfair)] text-lg text-espresso/80"
+                className="scroll-mt-2 mb-4 text-center font-display text-lg text-espresso/80"
               >
                 The vault is open.
               </motion.p>
@@ -685,7 +715,7 @@ export function HomeClient({
 
         <div className="mt-8">
           {photosError ? (
-            <section className="rounded-3xl border border-espresso/10 bg-white/25 p-6 backdrop-blur">
+            <section className="rounded-3xl border border-espresso/10 bg-burgundy/45 p-6 backdrop-blur">
               <p className="text-sm text-espresso/70">
                 <span className="font-medium">Gallery unavailable.</span>{" "}
                 {photosError}
@@ -694,7 +724,7 @@ export function HomeClient({
           ) : null}
 
           {authenticated && vaultLocked === null && !photosError ? (
-            <section className="rounded-3xl border border-espresso/10 bg-white/25 p-6 backdrop-blur">
+            <section className="rounded-3xl border border-espresso/10 bg-burgundy/45 p-6 backdrop-blur">
               <p className="text-sm text-espresso/70">
                 Loading the vault…
               </p>
@@ -704,8 +734,8 @@ export function HomeClient({
 
         <footer className="mt-12 text-center text-xs tracking-[0.02em] text-espresso/55">
           <p>
-            Crafted with care. Photos are stored securely and revealed after the
-            vault opens.
+            Cheers to Taylor &amp; Alexander. Photos are stored securely and
+            revealed after the vault opens.
           </p>
         </footer>
       </main>
