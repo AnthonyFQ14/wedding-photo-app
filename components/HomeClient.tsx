@@ -523,12 +523,12 @@ export function HomeClient({
               <div className="mx-auto mt-6 w-[68%] max-w-[18rem] rounded-t-full border border-espresso/30 p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
                 <div className="relative aspect-[3/4] overflow-hidden rounded-t-full">
                   <Image
-                    src="/engagement/couple.jpg"
-                    alt="Taylor and Alexander sharing a kiss and a champagne toast on the beach"
+                    src="/engagement/proposal.jpg"
+                    alt="Taylor and Alexander embracing on the beach, surrounded by red roses and candles"
                     fill
                     priority
                     sizes="(min-width: 640px) 288px, 68vw"
-                    className="object-cover object-[50%_40%]"
+                    className="object-cover object-[50%_80%]"
                   />
                 </div>
               </div>
