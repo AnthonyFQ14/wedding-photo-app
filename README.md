@@ -70,6 +70,7 @@ You’ll need:
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon (public) key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-only) |
+| `SUPABASE_SERVICE_ROLE_KEY_NEW` | Optional. Used instead of `SUPABASE_SERVICE_ROLE_KEY` when set (server-only) |
 | `APP_PASSCODE` | Passcode you’ll share with guests |
 | `SESSION_SIGNING_SECRET` | Long random string (e.g. `openssl rand -hex 32`) |
 | `WEDDING_DATE` | ISO date/time of the wedding (optional) |
